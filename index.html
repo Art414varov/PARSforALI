@@ -210,6 +210,17 @@
     white-space: nowrap;
   }
 
+  /* ===== ДИСКЛЕЙМЕР ===== */
+  .disclaimer {
+    margin-top: 15px;
+    font-size: 10pt;          /* ≈ 13px, мелкий шрифт */
+    line-height: 1.4;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+    padding: 0 10px;
+  }
+
  /* ===== QR-БЛОК ВНИЗУ ===== */
 .qr-block {
   display: flex;
@@ -304,6 +315,11 @@
       border-top: 1px solid #000;
       page-break-inside: avoid;
     }
+
+     .disclaimer {
+      color: #555;
+      page-break-inside: avoid;
+    }
   }
 </style>
 </head>
@@ -330,6 +346,11 @@
     <div class="result-box" id="result-box">
       <div class="sum" id="sum-label">Сумма: 0 баллов</div>
       <div class="risk" id="risk-label">Группа: не выбрана</div>
+    </div>
+
+     <!-- ===== ДИСКЛЕЙМЕР ===== -->
+    <div class="disclaimer">
+      Данное приложение является вспомогательным инструментом для расчета баллов и не заменяет профессиональное клиническое суждение врача
     </div>
 
     <!-- Подпись + дата -->
