@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор1</title>
+
+<!-- Библиотеки (CDN) -->
+<script src="qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<style>
+  /* ===== ПЕРЕМЕННЫЕ ТЕМ ===== */
+  :root {
+    --bg-body: #ecf0f1;
+    --bg-card: #ffffff;
+    --bg-field: #fafafa;
+    --bg-result: #ecf0f1;
+    --text-main: #2c3e50;
+    --text-muted: #7f8c8d;
+    --border: #e0e0e0;
+    --border-input: #bdc3c7;
+    --header-bg: #2c3e50;
+    --header-text: #ffffff;
+    --accent: #2980b9;
+    --btn-reset: #95a5a6;
+    --btn-print: #2980b9;
+    --btn-pdf: #c0392b;
+  }
+
+  body.dark {
+    --bg-body: #1a1a2e;
+    --bg-card: #16213e;
+    --bg-field: #0f3460;
+    --bg-result: #0f3460;
+    --text-main: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --border: #2a3a5a;
+    --border-input: #3a4a6a;
+    --header-bg: #0f3460;
+    --header-text: #e0e0e0;
+    --accent: #4a9eff;
+    --btn-reset: #555;
+    --btn-print: #2980b9;
+    --btn-pdf: #c0392b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg-body);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 680px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  /* ===== ШАПКА ===== */
+  .header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.3s;
+  }
+  .header h1 { font-size: 22px; }
+  .theme-toggle {
+    background: transparent;
+    border: 1px solid var(--header-text);
+    color: var(--header-text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: opacity 0.2s;
+  }
+  .theme-toggle:hover { opacity: 0.7; }
+
+  /* ===== ТЕЛО ===== */
+  .body { padding: 20px; }
+
+  /* Ф.И.О. */
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .name-row label {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .name-row input {
+    flex: 1;
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid var(--border-input);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.3s;
+  }
+  .name-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(41,128,185,0.15);
+  }
+
+  /* Пункты */
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-field);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .field label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .field select {
+    width: 180px;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid var(--border-input);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* Результат */
+  .result-box {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+    background: var(--bg-result);
+    transition: background 0.3s;
+  }
+  .result-box .sum {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .result-box .risk {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 6px;
+    background: #bdc3c7;
+    color: #2c3e50;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Подпись + дата */
+  .signature-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .signature-row label {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .signature-box {
+    width: 200px;
+    height: 40px;
+    border: 1px solid var(--text-main);
+    border-radius: 4px;
+    background: var(--bg-card);
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .signature-row .datetime {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ===== QR-БЛОК ВНИЗУ ===== */
+  .qr-block {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--border-input);
+  }
+  #qr-canvas-holder {
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+    background: #fff;
+    padding: 5px;
+    border-radius: 4px;
+  }
+  #qr-canvas-holder canvas,
+  #qr-canvas-holder img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+  }
+  .qr-block .qr-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .qr-block .qr-text strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text-main);
+    margin-bottom: 4px;
+  }
+
+  /* Кнопки */
+  .buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .buttons button {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #fff;
+    transition: opacity 0.2s;
+  }
+  .buttons button:hover { opacity: 0.85; }
+  .btn-reset { background: var(--btn-reset); }
+  .btn-print { background: var(--btn-print); }
+  .btn-pdf { background: var(--btn-pdf); }
+
+  /* ===== ПЕЧАТЬ ===== */
+  @media print {
+    body {
+      background: #fff;
+      padding: 0;
+      display: block;
+    }
+    .container {
+      box-shadow: none;
+      max-width: 100%;
+      border-radius: 0;
+    }
+    .header {
+      background: #fff;
+      color: #000;
+      border-bottom: 2px solid #000;
+    }
+    .theme-toggle { display: none; }
+    .buttons { display: none; }
+    .field { background: #fff; }
+    .result-box { border: 2px solid #000; }
+    .signature-box { border: 1px solid #000; }
+    .name-row input {
+      border: none;
+      border-bottom: 1px solid #000;
+      border-radius: 0;
+    }
+    .qr-block {
+      border-top: 1px solid #000;
+      page-break-inside: avoid;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="capture-area">
+  <!-- Шапка -->
+  <div class="header">
+    <h1 id="calc-title">Калькулятор1</h1>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Переключить тему">🌙</button>
+  </div>
+
+  <div class="body">
+    <!-- Ф.И.О. -->
+    <div class="name-row">
+      <label for="patient-name">Ф.И.О. пациента:</label>
+      <input type="text" id="patient-name" placeholder="Введите Ф.И.О.">
+    </div>
+
+    <!-- 6 пунктов -->
+    <div id="fields"></div>
+
+    <!-- Результат -->
+    <div class="result-box" id="result-box">
+      <div class="sum" id="sum-label">Сумма: 0 баллов</div>
+      <div class="risk" id="risk-label">Группа: не выбрана</div>
+    </div>
+
+    <!-- Подпись + дата -->
+    <div class="signature-row">
+      <label>Подпись врача:</label>
+      <div class="signature-box"></div>
+      <div class="datetime" id="datetime"></div>
+    </div>
+
+    <!-- ===== QR-БЛОК (внизу, попадает в печать и PDF) ===== -->
+    <div class="qr-block">
+      <div id="qr-canvas-holder"></div>
+      <div class="qr-text">
+        <strong>Ссылка на страницу шкалы:</strong>
+        <span id="qr-url-text"></span>
+      </div>
+    </div>
+
+    <!-- Кнопки (скрываются при печати и в PDF) -->
+    <div class="buttons">
+      <button class="btn-reset" onclick="resetAll()">🔄 Сбросить</button>
+      <button class="btn-print" onclick="window.print()">🖨️ Печать</button>
+      <button class="btn-pdf" onclick="downloadPDF()">📄 PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==============================================
+// 1. НАСТРОЙКА ДАННЫХ
+// ==============================================
+const CALCULATOR_NAME = "Калькулятор1";
+const QR_TARGET_URL = "https://ваш-сервер.ру/calc/"; // ← ЗАМЕНИ на свою ссылку!
+
+const parameters = {
+  "Пункт 1": [["0 баллов", 0], ["3 балла", 3]],
+  "Пункт 2": [["1 балл", 1], ["2 балла", 2], ["3 балла", 3], ["5 баллов", 5]],
+  "Пункт 3": [["3 балла", 3], ["8 баллов", 8], ["21 балл", 21]],
+  "Пункт 4": [["0 баллов", 0], ["6 баллов", 6]],
+  "Пункт 5": [["0 баллов", 0], ["2 балла", 2]],
+  "Пункт 6": [["0 баллов", 0], ["4 балла", 4]]
+};
+
+const riskGroups = [
+  { min: 0,  max: 19,   name: "Низкий риск",  color: "#27ae60", textColor: "#fff" },
+  { min: 20, max: 26,   name: "Средний риск", color: "#f39c12", textColor: "#fff" },
+  { min: 27, max: 9999, name: "Высокий риск", color: "#e74c3c", textColor: "#fff" }
+];
+
+// ==============================================
+// 2. ПОСТРОЕНИЕ ИНТЕРФЕЙСА
+// ==============================================
+document.getElementById("calc-title").textContent = CALCULATOR_NAME;
+document.title = CALCULATOR_NAME;
+
+const fieldsContainer = document.getElementById("fields");
+
+Object.keys(parameters).forEach((paramName, idx) => {
+  const field = document.createElement("div");
+  field.className = "field";
+
+  const label = document.createElement("label");
+  label.textContent = `${idx + 1}. ${paramName}`;
+  label.setAttribute("for", `param-${idx}`);
+
+  const select = document.createElement("select");
+  select.id = `param-${idx}`;
+  select.dataset.paramName = paramName;
+
+  parameters[paramName].forEach(([optionText, score], optIdx) => {
+    const opt = document.createElement("option");
+    opt.value = score;
+    opt.textContent = optionText;
+    if (optIdx === 0) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", calculate);
+
+  field.appendChild(label);
+  field.appendChild(select);
+  fieldsContainer.appendChild(field);
+});
+
+// ==============================================
+// 3. РАСЧЕТ
+// ==============================================
+function calculate() {
+  let total = 0;
+  document.querySelectorAll("select[data-param-name]").forEach(sel => {
+    total += parseInt(sel.value, 10) || 0;
+  });
+
+  document.getElementById("sum-label").textContent = `Сумма: ${total} баллов`;
+
+  const riskLabel = document.getElementById("risk-label");
+  const group = riskGroups.find(g => total >= g.min && total <= g.max)
+                || riskGroups[riskGroups.length - 1];
+
+  riskLabel.textContent = `Группа: ${group.name}`;
+  riskLabel.style.background = group.color;
+  riskLabel.style.color = group.textColor;
+
+  updateDateTime();
+}
+
+function resetAll() {
+  document.getElementById("patient-name").value = "";
+  document.querySelectorAll("select[data-param-name]").forEach(sel => {
+    sel.selectedIndex = 0;
+  });
+  calculate();
+}
+
+// ==============================================
+// 4. ДАТА И ВРЕМЯ
+// ==============================================
+function updateDateTime() {
+  const now = new Date();
+  const formatted = now.toLocaleString("ru-RU", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  });
+  document.getElementById("datetime").textContent = `Дата и время: ${formatted}`;
+}
+
+// ==============================================
+// 5. ТЕМНАЯ ТЕМА
+// ==============================================
+function applyTheme(theme) {
+  const body = document.body;
+  const btn = document.getElementById("theme-toggle");
+  if (theme === "dark") {
+    body.classList.add("dark");
+    btn.textContent = "☀️";
+  } else {
+    body.classList.remove("dark");
+    btn.textContent = "🌙";
+  }
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.contains("dark");
+  const newTheme = isDark ? "light" : "dark";
+  applyTheme(newTheme);
+  localStorage.setItem("calc-theme", newTheme);
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem("calc-theme") || "light";
+  applyTheme(saved);
+})();
+
+// ==============================================
+// 6. QR-КОД (рисуем сразу в видимый контейнер)
+// ==============================================
+function generateQR() {
+  const holder = document.getElementById("qr-canvas-holder");
+  holder.innerHTML = "";  // очищаем на случай повторного вызова
+
+  new QRCode(holder, {
+    text: QR_TARGET_URL,
+    width: 110,
+    height: 110,
+    colorDark: "#2c3e50",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  document.getElementById("qr-url-text").textContent = QR_TARGET_URL;
+}
+
+// ==============================================
+// 7. СОХРАНЕНИЕ В PDF
+// ==============================================
+async function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const element = document.getElementById("capture-area");
+
+  const buttons = element.querySelector(".buttons");
+  const themeToggle = element.querySelector(".theme-toggle");
+  const origButtons = buttons.style.display;
+  const origTheme = themeToggle.style.display;
+  buttons.style.display = "none";
+  themeToggle.style.display = "none";
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      backgroundColor: getComputedStyle(document.body).getPropertyValue("--bg-card").trim() || "#ffffff",
+      useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pdfWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let position = 10;
+    if (imgHeight > pdfHeight - 20) {
+      const ratio = (pdfHeight - 20) / imgHeight;
+      pdf.addImage(imgData, "PNG", 10, position, imgWidth * ratio, imgHeight * ratio);
+    } else {
+      pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+    }
+
+    const patientName = document.getElementById("patient-name").value.trim() || "без_имени";
+    const date = new Date().toLocaleDateString("ru-RU").replace(/\./g, "-");
+    pdf.save(`Расчет_${patientName}_${date}.pdf`);
+  } catch (err) {
+    console.error("Ошибка при создании PDF:", err);
+    alert("Не удалось создать PDF. Попробуйте ещё раз.");
+  } finally {
+    buttons.style.display = origButtons;
+    themeToggle.style.display = origTheme;
+  }
+}
+
+// ==============================================
+// 8. ИНИЦИАЛИЗАЦИЯ
+// ==============================================
+updateDateTime();
+calculate();
+generateQR();
+</script>
+
+</body>
+</html>
